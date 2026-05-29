@@ -189,6 +189,44 @@
     background: #060912;
     touch-action: none;
   }
+  /* 캔버스 위 좌표 툴팁 */
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: rgba(10, 14, 26, 0.95);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.5;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    transform: translate(8px, -50%);
+    opacity: 0;
+    transition: opacity 0.1s;
+    z-index: 5;
+    white-space: nowrap;
+  }
+  .tooltip.show { opacity: 1; }
+  .tooltip .tt-label {
+    color: var(--muted);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .tooltip .tt-coord {
+    color: var(--locus);
+    font-weight: 600;
+  }
+  .tooltip .tt-k {
+    color: var(--current);
+    font-weight: 600;
+  }
+  .tooltip .tt-row { display: flex; justify-content: space-between; gap: 12px; }
   .legend {
     display: flex;
     gap: 12px;
@@ -464,11 +502,13 @@
       <!-- 플롯 -->
       <div class="plot-wrap">
         <canvas id="canvas"></canvas>
+        <div class="tooltip" id="tooltip"></div>
         <div class="legend">
           <div class="legend-item"><div class="swatch pole"></div>개루프극점</div>
           <div class="legend-item"><div class="swatch zero"></div>개루프영점</div>
           <div class="legend-item"><div class="swatch locus"></div>궤적</div>
           <div class="legend-item"><div class="swatch current"></div>현재 K 위치</div>
+          <div class="legend-item" style="margin-left: auto; color: var(--accent-2);">💡 탭=좌표보기 · 더블탭=K점프</div>
         </div>
       </div>
 
@@ -807,12 +847,46 @@ function drawCurrentPoles(roots) {
   }
 }
 
+function drawHoverMarker() {
+  if (!hoverPoint) return;
+  const px = hoverPoint.px, py = hoverPoint.py;
+
+  // 십자선 (crosshair) — 좌표축까지 점선
+  ctx.strokeStyle = 'rgba(74, 222, 128, 0.4)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(px, py); ctx.lineTo(px, y2px(0));   // 세로 (실수축까지)
+  ctx.moveTo(px, py); ctx.lineTo(x2px(0), py);   // 가로 (허수축까지)
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 강조 원
+  ctx.strokeStyle = '#4ade80';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(px, py, 10, 0, Math.PI*2);
+  ctx.stroke();
+
+  // 작은 중심점
+  ctx.fillStyle = '#4ade80';
+  ctx.beginPath();
+  ctx.arc(px, py, 2.5, 0, Math.PI*2);
+  ctx.fill();
+}
+
 function redraw() {
   drawGrid();
   if (lastBranches) drawLocus(lastBranches);
   lastZeros.forEach(z => drawZero(z[0], z[1]));
   lastPoles.forEach(p => drawPole(p[0], p[1]));
   drawCurrentPoles(currentRoots);
+  // hoverPoint의 픽셀 좌표는 view 변경 시 갱신 필요
+  if (hoverPoint) {
+    hoverPoint.px = x2px(hoverPoint.x);
+    hoverPoint.py = y2px(hoverPoint.y);
+  }
+  drawHoverMarker();
 }
 
 function fmtComplex(c) {
@@ -911,6 +985,83 @@ slider.addEventListener('pointerup', e => {
   dragging = false;
 });
 slider.addEventListener('pointercancel', () => { dragging = false; });
+
+// ============================================================
+// 캔버스 인스펙터 — 궤적 위 점을 호버/탭하면 정확한 좌표 + K 표시
+// ============================================================
+let hoverPoint = null; // {x, y, K, root}
+const tooltip = document.getElementById('tooltip');
+
+function findNearestLocusPoint(mouseX, mouseY) {
+  if (!lastBranches || lastBranches.length === 0) return null;
+  let best = null, bestDist = Infinity;
+  // 픽셀 단위 거리로 비교 (화면상 가까운 점 찾기)
+  for (const b of lastBranches) {
+    for (const r of b.roots) {
+      if (!r || !isFinite(r[0]) || !isFinite(r[1])) continue;
+      const px = x2px(r[0]), py = y2px(r[1]);
+      const d = Math.hypot(px - mouseX, py - mouseY);
+      if (d < bestDist) {
+        bestDist = d;
+        best = { x: r[0], y: r[1], K: b.K, px, py };
+      }
+    }
+  }
+  // 30px 이내일 때만 표시
+  return bestDist < 30 ? best : null;
+}
+
+function updateTooltip(clientX, clientY) {
+  if (!hoverPoint) {
+    tooltip.classList.remove('show');
+    return;
+  }
+  const wrap = canvas.parentElement.getBoundingClientRect();
+  // 화면 절대좌표 기준으로 툴팁 위치 설정
+  const left = (canvas.getBoundingClientRect().left - wrap.left) + hoverPoint.px;
+  const top = (canvas.getBoundingClientRect().top - wrap.top) + hoverPoint.py;
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+
+  const re = hoverPoint.x.toFixed(4);
+  const im = hoverPoint.y.toFixed(4);
+  const imSign = hoverPoint.y >= 0 ? '+' : '';
+  tooltip.innerHTML = `
+    <div class="tt-label">SELECTED POINT</div>
+    <div class="tt-row"><span>s =</span><span class="tt-coord">${re}${imSign}${im}j</span></div>
+    <div class="tt-row"><span>Re(s) =</span><span class="tt-coord">${re}</span></div>
+    <div class="tt-row"><span>Im(s) =</span><span class="tt-coord">${im}</span></div>
+    <div class="tt-row"><span>K ≈</span><span class="tt-k">${hoverPoint.K.toFixed(3)}</span></div>
+  `;
+  tooltip.classList.add('show');
+}
+
+function handleCanvasPointer(e) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const mx = (clientX - rect.left) * cw() / rect.width;
+  const my = (clientY - rect.top) * ch() / rect.height;
+  hoverPoint = findNearestLocusPoint(mx, my);
+  updateTooltip(clientX, clientY);
+  redraw();
+}
+
+canvas.addEventListener('pointermove', handleCanvasPointer);
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId);
+  handleCanvasPointer(e);
+});
+canvas.addEventListener('pointerleave', () => {
+  hoverPoint = null;
+  tooltip.classList.remove('show');
+  redraw();
+});
+
+// 캔버스 더블탭/더블클릭 → 그 K로 슬라이더 점프
+canvas.addEventListener('dblclick', () => {
+  if (hoverPoint) updateK(hoverPoint.K);
+});
 
 // ============================================================
 // 메인 그리기

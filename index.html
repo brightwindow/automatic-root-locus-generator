@@ -421,6 +421,27 @@
     .subtitle { font-size: 14px; }
     .k-control { position: relative; bottom: auto; }
   }
+
+  /* === Footer (새로 추가됨) === */
+  .footer {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .footer a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.15s;
+  }
+  .footer a:hover {
+    color: var(--accent-2);
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
@@ -531,9 +552,13 @@
           <button onclick="stepK(-0.1)">−0.1</button>
           <button onclick="stepK(0.1)">+0.1</button>
           <button onclick="stepK(1)">+1</button>
-        </div>
+</div>
       </div>
     </div>
+  </div>
+
+  <div class="footer">
+    Made by <a href="https://github.com/brightwindow/automatic-root-locus-generator/tree/main" target="_blank">@brightwindow</a> · GitHub
   </div>
 </div>
 
@@ -627,38 +652,122 @@ function closedLoopPoles(num, den, K) {
   return findRoots(poly);
 }
 
-// 루트 로커스 전체 계산
+// 루트 로커스 전체 계산 — 적응형 세분화
 function computeLocus(num, den, kmax) {
+  // 1단계: 초기 샘플링 — 더 촘촘하게
   const Ks = [];
-  const steps = 500;
-  // 로그 + 선형 혼합
-  for (let i = 1; i <= steps; i++) {
-    const t = i / steps;
-    Ks.push(kmax * t);
-  }
-  // 작은 K도 잘 보이게
-  for (let i = 1; i <= 30; i++) Ks.unshift(kmax * i / 3000);
 
-  const branches = [];
-  let prev = null;
+  // 매우 작은 K 영역 (0 ~ kmax/100)
+  for (let i = 1; i <= 200; i++) {
+    Ks.push((kmax / 100) * (i / 200));
+  }
+  // 중간 K 영역 (kmax/100 ~ kmax/10) — 로그 분포
+  for (let i = 1; i <= 300; i++) {
+    const logT = i / 300;
+    Ks.push((kmax / 100) * Math.pow(10, logT));
+  }
+  // 큰 K 영역 (kmax/10 ~ kmax) — 선형
+  for (let i = 1; i <= 1000; i++) {
+    Ks.push((kmax / 10) + (kmax * 9 / 10) * (i / 1000));
+  }
+
+  Ks.sort((a, b) => a - b);
+
+  // 2단계: 1차 루트 계산
+  let branches = [];
   for (const K of Ks) {
-    let roots = closedLoopPoles(num, den, K);
+    branches.push({ K, roots: closedLoopPoles(num, den, K) });
+  }
+
+  // 3단계: 가지 매칭
+  branches = matchBranches(branches);
+
+  // 4단계: 적응형 세분화 — 매우 공격적으로
+  branches = adaptiveRefine(branches, num, den, 8);
+
+  return branches;
+}
+
+// 가지 매칭 — 모든 쌍 거리 기반 그리디 매칭
+function matchBranches(branches) {
+  let prev = null;
+  const result = [];
+  for (const b of branches) {
+    let roots = b.roots;
     if (prev && roots.length === prev.length) {
-      const matched = new Array(roots.length).fill(null);
-      const used = new Array(roots.length).fill(false);
-      for (let i = 0; i < prev.length; i++) {
-        let bj = -1, bd = Infinity;
-        for (let j = 0; j < roots.length; j++) {
-          if (used[j]) continue;
+      const n = roots.length;
+      const pairs = [];
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
           const d = (roots[j][0]-prev[i][0])**2 + (roots[j][1]-prev[i][1])**2;
-          if (d < bd) { bd = d; bj = j; }
+          pairs.push({ i, j, d });
         }
-        if (bj >= 0) { matched[i] = roots[bj]; used[bj] = true; }
+      }
+      pairs.sort((a, b) => a.d - b.d);
+      const matched = new Array(n).fill(null);
+      const usedI = new Array(n).fill(false);
+      const usedJ = new Array(n).fill(false);
+      for (const p of pairs) {
+        if (!usedI[p.i] && !usedJ[p.j]) {
+          matched[p.i] = roots[p.j];
+          usedI[p.i] = true;
+          usedJ[p.j] = true;
+        }
       }
       roots = matched;
     }
-    branches.push({ K, roots });
+    result.push({ K: b.K, roots });
     prev = roots;
+  }
+  return result;
+}
+
+// 적응형 세분화 — 매우 공격적으로
+function adaptiveRefine(branches, num, den, maxPasses) {
+  // 점들의 범위 계산
+  let allRoots = [];
+  for (const b of branches) for (const r of b.roots)
+    if (r && isFinite(r[0]) && isFinite(r[1]) && Math.abs(r[0]) < 1e4 && Math.abs(r[1]) < 1e4)
+      allRoots.push(r);
+  if (allRoots.length === 0) return branches;
+  const xs = allRoots.map(r => r[0]), ys = allRoots.map(r => r[1]);
+  const range = Math.max(
+    Math.max(...xs) - Math.min(...xs),
+    Math.max(...ys) - Math.min(...ys)
+  );
+  // 임계값을 매우 작게 — 화면의 0.3% 이상 점프하면 세분화
+  const threshold = range * 0.003;
+
+  for (let pass = 0; pass < maxPasses; pass++) {
+    const newBranches = [branches[0]];
+    let inserted = 0;
+    for (let i = 1; i < branches.length; i++) {
+      const a = branches[i-1], b = branches[i];
+      let maxJump = 0;
+      for (let r = 0; r < a.roots.length; r++) {
+        const p1 = a.roots[r], p2 = b.roots[r];
+        if (!p1 || !p2) continue;
+        if (!isFinite(p1[0]) || !isFinite(p2[0])) continue;
+        const d = Math.hypot(p2[0]-p1[0], p2[1]-p1[1]);
+        if (d > maxJump) maxJump = d;
+      }
+      // 점프가 크면 여러 중간 점 삽입 (점프 크기에 비례)
+      if (maxJump > threshold && (b.K - a.K) > 1e-12) {
+        // 점프 정도에 따라 1~5개 중간점 삽입
+        const subdivisions = Math.min(5, Math.ceil(maxJump / threshold));
+        for (let s = 1; s < subdivisions; s++) {
+          const t = s / subdivisions;
+          const midK = a.K + (b.K - a.K) * t;
+          const midRoots = closedLoopPoles(num, den, midK);
+          newBranches.push({ K: midK, roots: midRoots });
+          inserted++;
+        }
+      }
+      newBranches.push(b);
+    }
+    branches = matchBranches(newBranches);
+    if (inserted === 0) break;
+    if (branches.length > 20000) break; // 안전 한계 상향
   }
   return branches;
 }
@@ -791,32 +900,39 @@ function drawLocus(branches) {
   if (!branches || branches.length === 0) return;
   const nRoots = branches[0].roots.length;
 
-  ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
-  ctx.lineWidth = 1.2;
+  // 부드러운 곡선 라인
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = 1.8;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   for (let ri = 0; ri < nRoots; ri++) {
     ctx.beginPath();
     let started = false;
+    let lastPx = 0, lastPy = 0;
     for (let bi = 0; bi < branches.length; bi++) {
       const r = branches[bi].roots[ri];
       if (!r || !isFinite(r[0]) || !isFinite(r[1])) { started = false; continue; }
       const px = x2px(r[0]), py = y2px(r[1]);
-      if (!started) { ctx.moveTo(px, py); started = true; }
-      else ctx.lineTo(px, py);
+      // 한 화면 이상 점프하면 가지 분리 (불필요한 긴 선 방지)
+      if (started) {
+        const jump = Math.hypot(px - lastPx, py - lastPy);
+        if (jump > cw() * 0.5) {
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+        } else {
+          ctx.lineTo(px, py);
+        }
+      } else {
+        ctx.moveTo(px, py);
+        started = true;
+      }
+      lastPx = px; lastPy = py;
     }
     ctx.stroke();
   }
-
-  ctx.fillStyle = '#fbbf24';
-  for (const b of branches) {
-    for (const r of b.roots) {
-      if (!r || !isFinite(r[0]) || !isFinite(r[1])) continue;
-      const px = x2px(r[0]), py = y2px(r[1]);
-      if (px < -10 || px > cw()+10 || py < -10 || py > ch()+10) continue;
-      ctx.beginPath();
-      ctx.arc(px, py, 1.5, 0, Math.PI*2);
-      ctx.fill();
-    }
-  }
+  ctx.lineCap = 'butt';
+  ctx.lineJoin = 'miter';
 }
 
 function drawCurrentPoles(roots) {

@@ -2,6 +2,8 @@
 
 Interactive single-file root locus plotter that runs entirely in the browser. Enter the numerator and denominator coefficients of an open-loop transfer function and visualize how the closed-loop poles move as the gain **K** sweeps from 0 to ∞.
 
+**[Live demo](https://brightwindow.github.io/automatic-root-locus-generator/)** · No build step, no dependencies, no backend.
+
 ## Features
 
 - **Real-time K slider** — drag (or type a value directly) and watch the closed-loop poles glide along the locus

@@ -195,19 +195,20 @@
     pointer-events: none;
     background: rgba(10, 14, 26, 0.95);
     border: 1px solid var(--accent);
-    border-radius: 6px;
-    padding: 8px 10px;
+    border-radius: 8px;
+    padding: 10px 12px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     color: var(--text);
-    line-height: 1.5;
+    line-height: 1.6;
     backdrop-filter: blur(8px);
     box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-    transform: translate(8px, -50%);
+    transform: translate(12px, -50%);
     opacity: 0;
     transition: opacity 0.1s;
     z-index: 5;
     white-space: nowrap;
+    min-width: 220px;
   }
   .tooltip.show { opacity: 1; }
   .tooltip .tt-label {
@@ -216,17 +217,29 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-weight: 600;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(125,137,168,0.2);
   }
-  .tooltip .tt-coord {
-    color: var(--locus);
-    font-weight: 600;
+  .tooltip .tt-section {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(125,137,168,0.15);
   }
-  .tooltip .tt-k {
-    color: var(--current);
-    font-weight: 600;
+  .tooltip .tt-section-title {
+    color: var(--accent-2);
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    margin-bottom: 3px;
   }
-  .tooltip .tt-row { display: flex; justify-content: space-between; gap: 12px; }
+  .tooltip .tt-coord { color: var(--locus); font-weight: 600; }
+  .tooltip .tt-k { color: var(--current); font-weight: 600; }
+  .tooltip .tt-val { color: var(--accent); font-weight: 600; }
+  .tooltip .tt-warn { color: var(--pole); font-weight: 600; }
+  .tooltip .tt-ok { color: var(--accent); font-weight: 600; }
+  .tooltip .tt-row { display: flex; justify-content: space-between; gap: 16px; }
   .legend {
     display: flex;
     gap: 12px;
@@ -284,7 +297,6 @@
     text-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
     letter-spacing: -0.02em;
   }
-  /* K 직접 입력 input — 표시 div와 똑같이 보이지만 편집 가능 */
   .k-value-input {
     font-family: 'JetBrains Mono', monospace;
     font-size: 28px;
@@ -302,9 +314,7 @@
     -webkit-appearance: none;
     transition: border-color 0.15s, background 0.15s;
   }
-  .k-value-input:hover {
-    border-bottom-color: rgba(239, 68, 68, 0.6);
-  }
+  .k-value-input:hover { border-bottom-color: rgba(239, 68, 68, 0.6); }
   .k-value-input:focus {
     outline: none;
     border-bottom-color: var(--current);
@@ -312,7 +322,6 @@
     border-radius: 4px 4px 0 0;
   }
 
-  /* 모바일 친화적 슬라이더 */
   .slider-track {
     position: relative;
     height: 40px;
@@ -408,7 +417,6 @@
   }
   .error.show { display: block; }
 
-  /* 데스크탑에서는 2열 레이아웃 */
   @media (min-width: 900px) {
     body { padding: 24px; }
     .container { max-width: 1300px; margin: 0 auto; }
@@ -422,7 +430,6 @@
     .k-control { position: relative; bottom: auto; }
   }
 
-  /* === Footer (새로 추가됨) === */
   .footer {
     text-align: center;
     margin-top: 20px;
@@ -453,7 +460,6 @@
 
   <div class="layout">
     <div>
-      <!-- 입력 -->
       <div class="panel">
         <h2>전달함수 G(s) = K · N(s) / D(s)</h2>
         <div class="formula">
@@ -479,7 +485,6 @@
         <div class="error" id="error"></div>
       </div>
 
-      <!-- 프리셋 -->
       <div class="panel">
         <h2>프리셋</h2>
         <div class="preset-row">
@@ -491,7 +496,6 @@
         </div>
       </div>
 
-      <!-- 분석정보 -->
       <div class="panel">
         <h2>분석</h2>
         <div class="info-grid">
@@ -520,7 +524,6 @@
     </div>
 
     <div>
-      <!-- 플롯 -->
       <div class="plot-wrap">
         <canvas id="canvas"></canvas>
         <div class="tooltip" id="tooltip"></div>
@@ -533,7 +536,6 @@
         </div>
       </div>
 
-      <!-- K 슬라이더 (핵심 컨트롤) -->
       <div class="k-control">
         <div class="k-header">
           <div class="k-label">K =</div>
@@ -552,7 +554,7 @@
           <button onclick="stepK(-0.1)">−0.1</button>
           <button onclick="stepK(0.1)">+0.1</button>
           <button onclick="stepK(1)">+1</button>
-</div>
+        </div>
       </div>
     </div>
   </div>
@@ -584,7 +586,6 @@ function polyEvalC(coeffs, s) {
   return r;
 }
 
-// Durand-Kerner root finder
 function findRoots(coeffs) {
   let p = coeffs.slice();
   while (p.length > 1 && Math.abs(p[0]) < 1e-14) p.shift();
@@ -592,7 +593,6 @@ function findRoots(coeffs) {
   if (n <= 0) return [];
   const lead = p[0];
   const monic = p.map(c => c / lead);
-
   if (n === 1) return [[-monic[1], 0]];
   if (n === 2) {
     const b = monic[1], c = monic[2];
@@ -605,13 +605,11 @@ function findRoots(coeffs) {
       return [[-b/2, sq/2], [-b/2, -sq/2]];
     }
   }
-
   const roots = [];
   for (let k = 0; k < n; k++) {
     const angle = 2*Math.PI*k/n + 0.1;
     roots.push([0.4*Math.cos(angle), 0.4*Math.sin(angle)]);
   }
-
   for (let iter = 0; iter < 300; iter++) {
     let maxD = 0;
     for (let i = 0; i < n; i++) {
@@ -640,9 +638,6 @@ function parseCoeffs(str) {
   return nums;
 }
 
-// ============================================================
-// 폐루프 극점 계산: D(s) + K·N(s) = 0
-// ============================================================
 function closedLoopPoles(num, den, K) {
   const lenD = den.length, lenN = num.length;
   const len = Math.max(lenD, lenN);
@@ -652,43 +647,74 @@ function closedLoopPoles(num, den, K) {
   return findRoots(poly);
 }
 
-// 루트 로커스 전체 계산 — 적응형 세분화
-function computeLocus(num, den, kmax) {
-  // 1단계: 초기 샘플링 — 더 촘촘하게
-  const Ks = [];
+// ============================================================
+// 제어공학 파라미터 계산
+// ============================================================
+function calcControlParams(re, im) {
+  const sigma = re;        // 실수부
+  const omega = Math.abs(im); // 허수부
+  const wn = Math.hypot(sigma, omega); // 고유진동수 ωn = |s|
 
-  // 매우 작은 K 영역 (0 ~ kmax/100)
-  for (let i = 1; i <= 200; i++) {
-    Ks.push((kmax / 100) * (i / 200));
+  // 감쇠비 ζ = -σ / ωn = cos(θ)
+  // θ = angle from negative real axis
+  let zeta = 0, thetaDeg = 0;
+  if (wn > 1e-10) {
+    zeta = -sigma / wn;
+    // θ = atan2(|ω|, -σ) — angle measured from neg real axis
+    thetaDeg = Math.atan2(omega, -sigma) * 180 / Math.PI;
   }
-  // 중간 K 영역 (kmax/100 ~ kmax/10) — 로그 분포
+
+  // 2차 근사 기반 시간응답 파라미터
+  // %OS (overshoot) — 2차 시스템 근사
+  let OS = 0;
+  if (zeta > 0 && zeta < 1) {
+    OS = 100 * Math.exp(-Math.PI * zeta / Math.sqrt(1 - zeta*zeta));
+  } else if (zeta <= 0) {
+    OS = Infinity; // 불안정
+  }
+
+  // 정착 시간 ts (2% 기준) ≈ 4 / |σ|
+  let ts = (Math.abs(sigma) > 1e-10) ? 4 / Math.abs(sigma) : Infinity;
+
+  // 최대 오버슈트 시간 tp ≈ π / ωd  (ωd = |ω|)
+  let tp = (omega > 1e-10) ? Math.PI / omega : Infinity;
+
+  // 상승 시간 tr ≈ (π - θrad) / ωd
+  let tr = Infinity;
+  if (omega > 1e-10 && zeta > 0 && zeta < 1) {
+    const thetaRad = Math.acos(zeta);
+    tr = (Math.PI - thetaRad) / omega;
+  }
+
+  // 안정성 판별
+  let stability;
+  if (sigma < -1e-10) stability = 'stable';
+  else if (sigma > 1e-10) stability = 'unstable';
+  else stability = 'marginal';
+
+  return { sigma, omega, wn, zeta, thetaDeg, OS, ts, tp, tr, stability };
+}
+
+// ============================================================
+// 루트 로커스 계산 — 적응형 세분화
+// ============================================================
+function computeLocus(num, den, kmax) {
+  const Ks = [];
+  for (let i = 1; i <= 200; i++) Ks.push((kmax / 100) * (i / 200));
   for (let i = 1; i <= 300; i++) {
     const logT = i / 300;
     Ks.push((kmax / 100) * Math.pow(10, logT));
   }
-  // 큰 K 영역 (kmax/10 ~ kmax) — 선형
-  for (let i = 1; i <= 1000; i++) {
-    Ks.push((kmax / 10) + (kmax * 9 / 10) * (i / 1000));
-  }
-
+  for (let i = 1; i <= 1000; i++) Ks.push((kmax / 10) + (kmax * 9 / 10) * (i / 1000));
   Ks.sort((a, b) => a - b);
 
-  // 2단계: 1차 루트 계산
   let branches = [];
-  for (const K of Ks) {
-    branches.push({ K, roots: closedLoopPoles(num, den, K) });
-  }
-
-  // 3단계: 가지 매칭
+  for (const K of Ks) branches.push({ K, roots: closedLoopPoles(num, den, K) });
   branches = matchBranches(branches);
-
-  // 4단계: 적응형 세분화 — 매우 공격적으로
   branches = adaptiveRefine(branches, num, den, 8);
-
   return branches;
 }
 
-// 가지 매칭 — 모든 쌍 거리 기반 그리디 매칭
 function matchBranches(branches) {
   let prev = null;
   const result = [];
@@ -697,45 +723,33 @@ function matchBranches(branches) {
     if (prev && roots.length === prev.length) {
       const n = roots.length;
       const pairs = [];
-      for (let i = 0; i < n; i++) {
+      for (let i = 0; i < n; i++)
         for (let j = 0; j < n; j++) {
           const d = (roots[j][0]-prev[i][0])**2 + (roots[j][1]-prev[i][1])**2;
           pairs.push({ i, j, d });
         }
-      }
       pairs.sort((a, b) => a.d - b.d);
       const matched = new Array(n).fill(null);
       const usedI = new Array(n).fill(false);
       const usedJ = new Array(n).fill(false);
       for (const p of pairs) {
-        if (!usedI[p.i] && !usedJ[p.j]) {
-          matched[p.i] = roots[p.j];
-          usedI[p.i] = true;
-          usedJ[p.j] = true;
-        }
+        if (!usedI[p.i] && !usedJ[p.j]) { matched[p.i] = roots[p.j]; usedI[p.i] = true; usedJ[p.j] = true; }
       }
       roots = matched;
     }
-    result.push({ K: b.K, roots });
-    prev = roots;
+    result.push({ K: b.K, roots }); prev = roots;
   }
   return result;
 }
 
-// 적응형 세분화 — 매우 공격적으로
 function adaptiveRefine(branches, num, den, maxPasses) {
-  // 점들의 범위 계산
   let allRoots = [];
   for (const b of branches) for (const r of b.roots)
     if (r && isFinite(r[0]) && isFinite(r[1]) && Math.abs(r[0]) < 1e4 && Math.abs(r[1]) < 1e4)
       allRoots.push(r);
   if (allRoots.length === 0) return branches;
   const xs = allRoots.map(r => r[0]), ys = allRoots.map(r => r[1]);
-  const range = Math.max(
-    Math.max(...xs) - Math.min(...xs),
-    Math.max(...ys) - Math.min(...ys)
-  );
-  // 임계값을 매우 작게 — 화면의 0.3% 이상 점프하면 세분화
+  const range = Math.max(Math.max(...xs)-Math.min(...xs), Math.max(...ys)-Math.min(...ys));
   const threshold = range * 0.003;
 
   for (let pass = 0; pass < maxPasses; pass++) {
@@ -746,20 +760,16 @@ function adaptiveRefine(branches, num, den, maxPasses) {
       let maxJump = 0;
       for (let r = 0; r < a.roots.length; r++) {
         const p1 = a.roots[r], p2 = b.roots[r];
-        if (!p1 || !p2) continue;
-        if (!isFinite(p1[0]) || !isFinite(p2[0])) continue;
+        if (!p1 || !p2 || !isFinite(p1[0]) || !isFinite(p2[0])) continue;
         const d = Math.hypot(p2[0]-p1[0], p2[1]-p1[1]);
         if (d > maxJump) maxJump = d;
       }
-      // 점프가 크면 여러 중간 점 삽입 (점프 크기에 비례)
       if (maxJump > threshold && (b.K - a.K) > 1e-12) {
-        // 점프 정도에 따라 1~5개 중간점 삽입
         const subdivisions = Math.min(5, Math.ceil(maxJump / threshold));
         for (let s = 1; s < subdivisions; s++) {
           const t = s / subdivisions;
           const midK = a.K + (b.K - a.K) * t;
-          const midRoots = closedLoopPoles(num, den, midK);
-          newBranches.push({ K: midK, roots: midRoots });
+          newBranches.push({ K: midK, roots: closedLoopPoles(num, den, midK) });
           inserted++;
         }
       }
@@ -767,7 +777,7 @@ function adaptiveRefine(branches, num, den, maxPasses) {
     }
     branches = matchBranches(newBranches);
     if (inserted === 0) break;
-    if (branches.length > 20000) break; // 안전 한계 상향
+    if (branches.length > 20000) break;
   }
   return branches;
 }
@@ -777,20 +787,15 @@ function adaptiveRefine(branches, num, den, maxPasses) {
 // ============================================================
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-
 let view = { xmin: -10, xmax: 4, ymin: -7, ymax: 7 };
-let lastBranches = null;
-let lastPoles = [], lastZeros = [];
+let lastBranches = null, lastPoles = [], lastZeros = [];
 let lastNum = null, lastDen = null;
-let currentK = 0;
-let currentRoots = [];
-let dpr = 1;
+let currentK = 0, currentRoots = [], dpr = 1;
 
 function setupCanvas() {
   dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   const cssW = rect.width;
-  // 모바일: 정사각형에 가깝게, 데스크탑: 약간 가로형
   const isMobile = window.innerWidth < 900;
   const cssH = isMobile ? cssW * 1.0 : cssW * 0.7;
   canvas.style.height = cssH + 'px';
@@ -798,7 +803,6 @@ function setupCanvas() {
   canvas.height = cssH * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-
 function cw() { return canvas.width / dpr; }
 function ch() { return canvas.height / dpr; }
 
@@ -806,133 +810,137 @@ function setViewFromData(poles, zeros, branches) {
   let xs = [], ys = [];
   poles.forEach(p => { xs.push(p[0]); ys.push(p[1]); });
   zeros.forEach(z => { xs.push(z[0]); ys.push(z[1]); });
-  for (const b of branches) {
-    for (const r of b.roots) {
-      if (r && isFinite(r[0]) && isFinite(r[1]) && Math.abs(r[0]) < 1e3 && Math.abs(r[1]) < 1e3) {
-        xs.push(r[0]); ys.push(r[1]);
-      }
-    }
-  }
+  for (const b of branches) for (const r of b.roots)
+    if (r && isFinite(r[0]) && isFinite(r[1]) && Math.abs(r[0]) < 1e3 && Math.abs(r[1]) < 1e3) { xs.push(r[0]); ys.push(r[1]); }
   if (xs.length === 0) return;
   let xmin = Math.min(...xs), xmax = Math.max(...xs);
   let ymin = Math.min(...ys), ymax = Math.max(...ys);
-  const xPad = Math.max(2, (xmax - xmin) * 0.25);
-  const yPad = Math.max(2, (ymax - ymin) * 0.25);
-  xmin -= xPad; xmax += xPad;
-  ymin -= yPad; ymax += yPad;
+  const xPad = Math.max(2, (xmax-xmin)*0.25), yPad = Math.max(2, (ymax-ymin)*0.25);
+  xmin -= xPad; xmax += xPad; ymin -= yPad; ymax += yPad;
   const ymag = Math.max(Math.abs(ymin), Math.abs(ymax));
   view = { xmin, xmax, ymin: -ymag, ymax: ymag };
 }
 
-function x2px(x) { return (x - view.xmin) / (view.xmax - view.xmin) * cw(); }
-function y2px(y) { return ch() - (y - view.ymin) / (view.ymax - view.ymin) * ch(); }
+function x2px(x) { return (x-view.xmin)/(view.xmax-view.xmin)*cw(); }
+function y2px(y) { return ch()-(y-view.ymin)/(view.ymax-view.ymin)*ch(); }
 
 function niceStep(raw) {
   const exp = Math.floor(Math.log10(raw));
   const f = raw / Math.pow(10, exp);
-  let nf;
-  if (f < 1.5) nf = 1;
-  else if (f < 3) nf = 2;
-  else if (f < 7) nf = 5;
-  else nf = 10;
+  let nf; if (f<1.5) nf=1; else if (f<3) nf=2; else if (f<7) nf=5; else nf=10;
   return nf * Math.pow(10, exp);
+}
+
+// ============================================================
+// 감쇠비 등고선 (ζ = const lines) 그리기
+// ============================================================
+function drawDampingLines() {
+  const zetaVals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+  ctx.lineWidth = 0.7;
+  ctx.font = '9px monospace';
+
+  for (const z of zetaVals) {
+    // ζ = cos(θ)  →  θ = acos(ζ)
+    // 직선: y/x = tan(π - θ) 즉 원점에서 각도 θ인 직선
+    const theta = Math.acos(z);
+    const lineLen = Math.max(Math.abs(view.xmin), Math.abs(view.ymax)) * 2;
+    const x1 = -lineLen * Math.cos(theta);
+    const y1 =  lineLen * Math.sin(theta);
+    const x2 = -lineLen * Math.cos(theta);
+    const y2 = -lineLen * Math.sin(theta);
+
+    ctx.strokeStyle = 'rgba(74, 222, 128, 0.08)';
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath();
+    ctx.moveTo(x2px(0), y2px(0));
+    ctx.lineTo(x2px(x1), y2px(y1));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2px(0), y2px(0));
+    ctx.lineTo(x2px(x2), y2px(y2));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 라벨 — 좌측 상단 끝에 표시
+    const labelX = -Math.abs(view.xmin) * 0.7 * Math.cos(theta);
+    const labelY = Math.abs(view.xmin) * 0.7 * Math.sin(theta);
+    const px = x2px(labelX), py = y2px(labelY);
+    if (px > 10 && px < cw()-30 && py > 10 && py < ch()-10) {
+      ctx.fillStyle = 'rgba(74, 222, 128, 0.25)';
+      ctx.fillText('ζ=' + z.toFixed(1), px+2, py-3);
+    }
+  }
 }
 
 function drawGrid() {
   ctx.fillStyle = '#060912';
   ctx.fillRect(0, 0, cw(), ch());
 
+  // 감쇠비 등고선 먼저 (배경)
+  drawDampingLines();
+
   const xStep = niceStep((view.xmax-view.xmin)/8);
   const yStep = niceStep((view.ymax-view.ymin)/8);
-
   ctx.strokeStyle = 'rgba(125, 137, 168, 0.10)';
   ctx.lineWidth = 1;
   ctx.font = '10px monospace';
   ctx.fillStyle = 'rgba(125, 137, 168, 0.55)';
-
   for (let x = Math.ceil(view.xmin/xStep)*xStep; x <= view.xmax; x += xStep) {
     const px = x2px(x);
     ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, ch()); ctx.stroke();
-    if (Math.abs(x) > xStep*0.01)
-      ctx.fillText(x.toFixed(xStep < 1 ? 1 : 0), px+2, y2px(0)-3);
+    if (Math.abs(x) > xStep*0.01) ctx.fillText(x.toFixed(xStep<1?1:0), px+2, y2px(0)-3);
   }
   for (let y = Math.ceil(view.ymin/yStep)*yStep; y <= view.ymax; y += yStep) {
     const py = y2px(y);
     ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(cw(), py); ctx.stroke();
-    if (Math.abs(y) > yStep*0.01)
-      ctx.fillText(y.toFixed(yStep < 1 ? 1 : 0)+'j', x2px(0)+4, py-2);
+    if (Math.abs(y) > yStep*0.01) ctx.fillText(y.toFixed(yStep<1?1:0)+'j', x2px(0)+4, py-2);
   }
-
-  ctx.strokeStyle = 'rgba(230, 235, 245, 0.35)';
-  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = 'rgba(230, 235, 245, 0.35)'; ctx.lineWidth = 1.2;
   ctx.beginPath();
   ctx.moveTo(0, y2px(0)); ctx.lineTo(cw(), y2px(0));
   ctx.moveTo(x2px(0), 0); ctx.lineTo(x2px(0), ch());
   ctx.stroke();
-
-  ctx.fillStyle = 'rgba(230, 235, 245, 0.5)';
-  ctx.font = '10px monospace';
+  ctx.fillStyle = 'rgba(230, 235, 245, 0.5)'; ctx.font = '10px monospace';
   ctx.fillText('Re', cw()-18, y2px(0)-5);
   ctx.fillText('Im', x2px(0)+5, 12);
 }
 
 function drawPole(x, y) {
   const px = x2px(x), py = y2px(y);
-  ctx.strokeStyle = '#f87171';
-  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = '#f87171'; ctx.lineWidth = 2.5;
   const s = 7;
   ctx.beginPath();
-  ctx.moveTo(px-s, py-s); ctx.lineTo(px+s, py+s);
-  ctx.moveTo(px+s, py-s); ctx.lineTo(px-s, py+s);
+  ctx.moveTo(px-s,py-s); ctx.lineTo(px+s,py+s);
+  ctx.moveTo(px+s,py-s); ctx.lineTo(px-s,py+s);
   ctx.stroke();
 }
-
 function drawZero(x, y) {
   const px = x2px(x), py = y2px(y);
-  ctx.strokeStyle = '#60a5fa';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.arc(px, py, 7, 0, Math.PI*2);
-  ctx.stroke();
+  ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI*2); ctx.stroke();
 }
 
 function drawLocus(branches) {
   if (!branches || branches.length === 0) return;
   const nRoots = branches[0].roots.length;
-
-  // 부드러운 곡선 라인
-  ctx.strokeStyle = '#fbbf24';
-  ctx.lineWidth = 1.8;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.8;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for (let ri = 0; ri < nRoots; ri++) {
-    ctx.beginPath();
-    let started = false;
-    let lastPx = 0, lastPy = 0;
+    ctx.beginPath(); let started = false; let lastPx=0, lastPy=0;
     for (let bi = 0; bi < branches.length; bi++) {
       const r = branches[bi].roots[ri];
       if (!r || !isFinite(r[0]) || !isFinite(r[1])) { started = false; continue; }
       const px = x2px(r[0]), py = y2px(r[1]);
-      // 한 화면 이상 점프하면 가지 분리 (불필요한 긴 선 방지)
       if (started) {
-        const jump = Math.hypot(px - lastPx, py - lastPy);
-        if (jump > cw() * 0.5) {
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(px, py);
-        } else {
-          ctx.lineTo(px, py);
-        }
-      } else {
-        ctx.moveTo(px, py);
-        started = true;
-      }
+        const jump = Math.hypot(px-lastPx, py-lastPy);
+        if (jump > cw()*0.5) { ctx.stroke(); ctx.beginPath(); ctx.moveTo(px, py); }
+        else ctx.lineTo(px, py);
+      } else { ctx.moveTo(px, py); started = true; }
       lastPx = px; lastPy = py;
     }
     ctx.stroke();
   }
-  ctx.lineCap = 'butt';
-  ctx.lineJoin = 'miter';
+  ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
 }
 
 function drawCurrentPoles(roots) {
@@ -940,26 +948,12 @@ function drawCurrentPoles(roots) {
   for (const r of roots) {
     if (!r || !isFinite(r[0]) || !isFinite(r[1])) continue;
     const px = x2px(r[0]), py = y2px(r[1]);
-
-    // 빛나는 후광 효과
     const gradient = ctx.createRadialGradient(px, py, 0, px, py, 18);
     gradient.addColorStop(0, 'rgba(239, 68, 68, 0.6)');
     gradient.addColorStop(1, 'rgba(239, 68, 68, 0)');
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(px, py, 18, 0, Math.PI*2);
-    ctx.fill();
-
-    // 빨간 점
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.arc(px, py, 7, 0, Math.PI*2);
-    ctx.fill();
-
-    // 흰 테두리
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
   }
 }
 
@@ -967,28 +961,47 @@ function drawHoverMarker() {
   if (!hoverPoint) return;
   const px = hoverPoint.px, py = hoverPoint.py;
 
-  // 십자선 (crosshair) — 좌표축까지 점선
-  ctx.strokeStyle = 'rgba(74, 222, 128, 0.4)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 4]);
+  // 원점에서 해당 점까지 각도선 (ζ 라인 강조)
+  ctx.strokeStyle = 'rgba(74, 222, 128, 0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 4]);
   ctx.beginPath();
-  ctx.moveTo(px, py); ctx.lineTo(px, y2px(0));   // 세로 (실수축까지)
-  ctx.moveTo(px, py); ctx.lineTo(x2px(0), py);   // 가로 (허수축까지)
+  ctx.moveTo(x2px(0), y2px(0));
+  ctx.lineTo(px, py);
+  ctx.stroke();
+
+  // 십자선
+  ctx.strokeStyle = 'rgba(74, 222, 128, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(px, py); ctx.lineTo(px, y2px(0));
+  ctx.moveTo(px, py); ctx.lineTo(x2px(0), py);
   ctx.stroke();
   ctx.setLineDash([]);
 
   // 강조 원
-  ctx.strokeStyle = '#4ade80';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.arc(px, py, 10, 0, Math.PI*2);
-  ctx.stroke();
+  ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(px, py, 10, 0, Math.PI*2); ctx.stroke();
+  ctx.fillStyle = '#4ade80'; ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI*2); ctx.fill();
 
-  // 작은 중심점
-  ctx.fillStyle = '#4ade80';
-  ctx.beginPath();
-  ctx.arc(px, py, 2.5, 0, Math.PI*2);
-  ctx.fill();
+  // θ 각도 호 표시 (원점 기준)
+  if (Math.abs(hoverPoint.y) > 0.01) {
+    const arcRadius = 25;
+    const originPx = x2px(0), originPy = y2px(0);
+    const angle = Math.atan2(-hoverPoint.y, -hoverPoint.x); // canvas 좌표계
+    const startAngle = 0; // 음의 실수축 = π
+    ctx.strokeStyle = 'rgba(74, 222, 128, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (hoverPoint.y > 0) {
+      // 상반면: π에서 angle까지
+      ctx.arc(originPx, originPy, arcRadius, Math.PI, Math.PI + Math.atan2(Math.abs(hoverPoint.y), -hoverPoint.x), true);
+    } else {
+      // 하반면
+      ctx.arc(originPx, originPy, arcRadius, Math.PI, Math.PI - Math.atan2(Math.abs(hoverPoint.y), -hoverPoint.x), false);
+    }
+    ctx.stroke();
+  }
 }
 
 function redraw() {
@@ -997,11 +1010,7 @@ function redraw() {
   lastZeros.forEach(z => drawZero(z[0], z[1]));
   lastPoles.forEach(p => drawPole(p[0], p[1]));
   drawCurrentPoles(currentRoots);
-  // hoverPoint의 픽셀 좌표는 view 변경 시 갱신 필요
-  if (hoverPoint) {
-    hoverPoint.px = x2px(hoverPoint.x);
-    hoverPoint.py = y2px(hoverPoint.y);
-  }
+  if (hoverPoint) { hoverPoint.px = x2px(hoverPoint.x); hoverPoint.py = y2px(hoverPoint.y); }
   drawHoverMarker();
 }
 
@@ -1018,136 +1027,125 @@ function fmtComplex(c) {
 function updateK(K) {
   currentK = K;
   const kInput = document.getElementById('kdisplay');
-  // 사용자가 직접 입력 중일 땐 값을 덮어쓰지 않음
-  if (document.activeElement !== kInput) {
-    kInput.value = K.toFixed(2);
-  }
+  if (document.activeElement !== kInput) kInput.value = K.toFixed(2);
   const kmax = parseFloat(document.getElementById('kmax').value);
   const pct = Math.max(0, Math.min(1, K/kmax)) * 100;
   document.getElementById('sliderFill').style.width = pct + '%';
   document.getElementById('sliderThumb').style.left = pct + '%';
-
   if (lastNum && lastDen) {
     currentRoots = closedLoopPoles(lastNum, lastDen, K);
-    document.getElementById('info-current').textContent =
-      currentRoots.map(r => fmtComplex(r)).join(', ');
+    document.getElementById('info-current').textContent = currentRoots.map(r => fmtComplex(r)).join(', ');
     redraw();
   }
 }
 
-// K 직접 입력 처리
 const kInput = document.getElementById('kdisplay');
 function applyKInput() {
   const v = parseFloat(kInput.value);
-  if (!isFinite(v)) {
-    kInput.value = currentK.toFixed(2);
-    return;
-  }
+  if (!isFinite(v)) { kInput.value = currentK.toFixed(2); return; }
   const kmax = parseFloat(document.getElementById('kmax').value);
-  // K가 kmax보다 크면 kmax 자동 확장 (편의)
   if (v > kmax) {
     document.getElementById('kmax').value = v.toFixed(2);
     document.getElementById('kmaxLabel').textContent = v.toFixed(2);
-    // 궤적 재계산
-    if (lastNum && lastDen) {
-      lastBranches = computeLocus(lastNum, lastDen, v);
-      setViewFromData(lastPoles, lastZeros, lastBranches);
-    }
+    if (lastNum && lastDen) { lastBranches = computeLocus(lastNum, lastDen, v); setViewFromData(lastPoles, lastZeros, lastBranches); }
   }
   const clamped = Math.max(0, v);
-  updateK(clamped);
-  kInput.value = clamped.toFixed(2);
+  updateK(clamped); kInput.value = clamped.toFixed(2);
 }
 kInput.addEventListener('change', applyKInput);
-kInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    kInput.blur();
-  }
-});
+kInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); kInput.blur(); } });
 kInput.addEventListener('focus', () => kInput.select());
 
 function stepK(delta) {
   const kmax = parseFloat(document.getElementById('kmax').value);
-  let next = currentK + delta;
-  next = Math.max(0, Math.min(kmax, next));
-  updateK(next);
+  updateK(Math.max(0, Math.min(kmax, currentK + delta)));
 }
 
 // ============================================================
-// 슬라이더 인터랙션 (터치 + 마우스)
+// 슬라이더
 // ============================================================
 const slider = document.getElementById('slider');
 let dragging = false;
-
 function handlePointer(e) {
   const rect = slider.getBoundingClientRect();
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  let pct = (clientX - rect.left) / rect.width;
+  let pct = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) / rect.width;
   pct = Math.max(0, Math.min(1, pct));
-  const kmax = parseFloat(document.getElementById('kmax').value);
-  updateK(pct * kmax);
+  updateK(pct * parseFloat(document.getElementById('kmax').value));
 }
-
-slider.addEventListener('pointerdown', e => {
-  dragging = true;
-  slider.setPointerCapture(e.pointerId);
-  handlePointer(e);
-});
-slider.addEventListener('pointermove', e => {
-  if (dragging) handlePointer(e);
-});
-slider.addEventListener('pointerup', e => {
-  dragging = false;
-});
+slider.addEventListener('pointerdown', e => { dragging = true; slider.setPointerCapture(e.pointerId); handlePointer(e); });
+slider.addEventListener('pointermove', e => { if (dragging) handlePointer(e); });
+slider.addEventListener('pointerup', () => { dragging = false; });
 slider.addEventListener('pointercancel', () => { dragging = false; });
 
 // ============================================================
-// 캔버스 인스펙터 — 궤적 위 점을 호버/탭하면 정확한 좌표 + K 표시
+// 캔버스 인스펙터 — 좌표 + 제어공학 파라미터 툴팁
 // ============================================================
-let hoverPoint = null; // {x, y, K, root}
+let hoverPoint = null;
 const tooltip = document.getElementById('tooltip');
 
 function findNearestLocusPoint(mouseX, mouseY) {
   if (!lastBranches || lastBranches.length === 0) return null;
   let best = null, bestDist = Infinity;
-  // 픽셀 단위 거리로 비교 (화면상 가까운 점 찾기)
   for (const b of lastBranches) {
     for (const r of b.roots) {
       if (!r || !isFinite(r[0]) || !isFinite(r[1])) continue;
       const px = x2px(r[0]), py = y2px(r[1]);
       const d = Math.hypot(px - mouseX, py - mouseY);
-      if (d < bestDist) {
-        bestDist = d;
-        best = { x: r[0], y: r[1], K: b.K, px, py };
-      }
+      if (d < bestDist) { bestDist = d; best = { x: r[0], y: r[1], K: b.K, px, py }; }
     }
   }
-  // 30px 이내일 때만 표시
   return bestDist < 30 ? best : null;
 }
 
 function updateTooltip(clientX, clientY) {
-  if (!hoverPoint) {
-    tooltip.classList.remove('show');
-    return;
-  }
+  if (!hoverPoint) { tooltip.classList.remove('show'); return; }
   const wrap = canvas.parentElement.getBoundingClientRect();
-  // 화면 절대좌표 기준으로 툴팁 위치 설정
-  const left = (canvas.getBoundingClientRect().left - wrap.left) + hoverPoint.px;
-  const top = (canvas.getBoundingClientRect().top - wrap.top) + hoverPoint.py;
+  const canvasRect = canvas.getBoundingClientRect();
+  let left = (canvasRect.left - wrap.left) + hoverPoint.px;
+  let top = (canvasRect.top - wrap.top) + hoverPoint.py;
+
+  // 툴팁이 캔버스 오른쪽을 벗어나면 왼쪽에 표시
+  if (hoverPoint.px > cw() * 0.65) {
+    tooltip.style.transform = 'translate(-100%, -50%) translateX(-12px)';
+  } else {
+    tooltip.style.transform = 'translate(12px, -50%)';
+  }
   tooltip.style.left = left + 'px';
   tooltip.style.top = top + 'px';
 
-  const re = hoverPoint.x.toFixed(4);
-  const im = hoverPoint.y.toFixed(4);
-  const imSign = hoverPoint.y >= 0 ? '+' : '';
+  const re = hoverPoint.x;
+  const im = hoverPoint.y;
+  const params = calcControlParams(re, im);
+
+  const stabClass = params.stability === 'stable' ? 'tt-ok' : (params.stability === 'unstable' ? 'tt-warn' : 'tt-coord');
+  const stabText = params.stability === 'stable' ? '✓ Stable' : (params.stability === 'unstable' ? '✗ Unstable' : '△ Marginal');
+  const stabKo = params.stability === 'stable' ? '안정' : (params.stability === 'unstable' ? '불안정' : '임계');
+
+  const fmtTime = (v) => v === Infinity || !isFinite(v) ? '∞' : v.toFixed(3) + 's';
+  const fmtPct = (v) => v === Infinity || !isFinite(v) ? '∞' : v.toFixed(1) + '%';
+
   tooltip.innerHTML = `
-    <div class="tt-label">SELECTED POINT</div>
-    <div class="tt-row"><span>s =</span><span class="tt-coord">${re}${imSign}${im}j</span></div>
-    <div class="tt-row"><span>Re(s) =</span><span class="tt-coord">${re}</span></div>
-    <div class="tt-row"><span>Im(s) =</span><span class="tt-coord">${im}</span></div>
+    <div class="tt-label">📍 POLE ANALYSIS</div>
+    <div class="tt-row"><span>s =</span><span class="tt-coord">${re.toFixed(4)}${im >= 0 ? '+' : ''}${im.toFixed(4)}j</span></div>
     <div class="tt-row"><span>K ≈</span><span class="tt-k">${hoverPoint.K.toFixed(3)}</span></div>
+    <div class="tt-row"><span>상태</span><span class="${stabClass}">${stabText} (${stabKo})</span></div>
+
+    <div class="tt-section">
+      <div class="tt-section-title">📐 극점 파라미터</div>
+      <div class="tt-row"><span>ωn (고유진동수)</span><span class="tt-val">${params.wn.toFixed(4)}</span></div>
+      <div class="tt-row"><span>ζ (감쇠비)</span><span class="tt-val">${params.zeta.toFixed(4)}</span></div>
+      <div class="tt-row"><span>θ (각도)</span><span class="tt-val">${params.thetaDeg.toFixed(1)}°</span></div>
+      <div class="tt-row"><span>σ (실수부)</span><span class="tt-val">${params.sigma.toFixed(4)}</span></div>
+      <div class="tt-row"><span>ωd (허수부)</span><span class="tt-val">${params.omega.toFixed(4)}</span></div>
+    </div>
+
+    <div class="tt-section">
+      <div class="tt-section-title">📈 2차 근사 시간응답</div>
+      <div class="tt-row"><span>%OS (오버슈트)</span><span class="tt-val">${fmtPct(params.OS)}</span></div>
+      <div class="tt-row"><span>ts (정착, 2%)</span><span class="tt-val">${fmtTime(params.ts)}</span></div>
+      <div class="tt-row"><span>tp (최대 오버슈트)</span><span class="tt-val">${fmtTime(params.tp)}</span></div>
+      <div class="tt-row"><span>tr (상승시간)</span><span class="tt-val">${fmtTime(params.tr)}</span></div>
+    </div>
   `;
   tooltip.classList.add('show');
 }
@@ -1164,23 +1162,12 @@ function handleCanvasPointer(e) {
 }
 
 canvas.addEventListener('pointermove', handleCanvasPointer);
-canvas.addEventListener('pointerdown', e => {
-  canvas.setPointerCapture(e.pointerId);
-  handleCanvasPointer(e);
-});
-canvas.addEventListener('pointerleave', () => {
-  hoverPoint = null;
-  tooltip.classList.remove('show');
-  redraw();
-});
-
-// 캔버스 더블탭/더블클릭 → 그 K로 슬라이더 점프
-canvas.addEventListener('dblclick', () => {
-  if (hoverPoint) updateK(hoverPoint.K);
-});
+canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); handleCanvasPointer(e); });
+canvas.addEventListener('pointerleave', () => { hoverPoint = null; tooltip.classList.remove('show'); redraw(); });
+canvas.addEventListener('dblclick', () => { if (hoverPoint) updateK(hoverPoint.K); });
 
 // ============================================================
-// 메인 그리기
+// 메인
 // ============================================================
 function plot() {
   const errEl = document.getElementById('error');
@@ -1189,45 +1176,24 @@ function plot() {
     const num = parseCoeffs(document.getElementById('num').value);
     const den = parseCoeffs(document.getElementById('den').value);
     const kmax = parseFloat(document.getElementById('kmax').value);
-
     if (!isFinite(kmax) || kmax <= 0) throw new Error('K 최대값은 양수');
-
     const poles = findRoots(den);
     const zeros = findRoots(num);
     const branches = computeLocus(num, den, kmax);
-
-    lastPoles = poles;
-    lastZeros = zeros;
-    lastBranches = branches;
-    lastNum = num;
-    lastDen = den;
-
+    lastPoles = poles; lastZeros = zeros; lastBranches = branches; lastNum = num; lastDen = den;
     setupCanvas();
     setViewFromData(poles, zeros, branches);
-
     document.getElementById('kmaxLabel').textContent = kmax.toString();
-
-    // 분석정보
-    document.getElementById('info-poles').textContent = poles.length + ': ' +
-      poles.map(p => fmtComplex(p)).join(', ');
-    document.getElementById('info-zeros').textContent = zeros.length === 0 ? '0' :
-      zeros.length + ': ' + zeros.map(z => fmtComplex(z)).join(', ');
+    document.getElementById('info-poles').textContent = poles.length + ': ' + poles.map(p => fmtComplex(p)).join(', ');
+    document.getElementById('info-zeros').textContent = zeros.length === 0 ? '0' : zeros.length + ': ' + zeros.map(z => fmtComplex(z)).join(', ');
     document.getElementById('info-asym').textContent = (poles.length - zeros.length).toString();
     if (poles.length > zeros.length) {
       const sumP = poles.reduce((s, p) => s + p[0], 0);
       const sumZ = zeros.reduce((s, z) => s + z[0], 0);
-      document.getElementById('info-center').textContent =
-        ((sumP - sumZ) / (poles.length - zeros.length)).toFixed(3);
-    } else {
-      document.getElementById('info-center').textContent = '—';
-    }
-
-    // K=0으로 초기화 (=개루프 극점 위치)
+      document.getElementById('info-center').textContent = ((sumP - sumZ) / (poles.length - zeros.length)).toFixed(3);
+    } else { document.getElementById('info-center').textContent = '—'; }
     updateK(0);
-  } catch (e) {
-    errEl.textContent = '⚠ ' + e.message;
-    errEl.classList.add('show');
-  }
+  } catch (e) { errEl.textContent = '⚠ ' + e.message; errEl.classList.add('show'); }
 }
 
 function setPreset(num, den, kmax) {
@@ -1236,27 +1202,12 @@ function setPreset(num, den, kmax) {
   document.getElementById('kmax').value = kmax;
   plot();
 }
-
 function resetView() {
-  if (lastBranches) {
-    setupCanvas();
-    setViewFromData(lastPoles, lastZeros, lastBranches);
-    redraw();
-  }
+  if (lastBranches) { setupCanvas(); setViewFromData(lastPoles, lastZeros, lastBranches); redraw(); }
 }
 
-window.addEventListener('resize', () => {
-  if (lastBranches) {
-    setupCanvas();
-    redraw();
-  }
-});
-
-// 초기 실행
-window.addEventListener('load', () => {
-  setupCanvas();
-  plot();
-});
+window.addEventListener('resize', () => { if (lastBranches) { setupCanvas(); redraw(); } });
+window.addEventListener('load', () => { setupCanvas(); plot(); });
 </script>
 </body>
 </html>

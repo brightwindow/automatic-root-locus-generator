@@ -33,11 +33,9 @@ git init
 git add index.html
 git commit -m "Initial commit"
 git branch -M main
-git remote add origin https://github.com/<your-username>/<repo>.git
-git push -u origin main
-```
-
-Then in repo settings → Pages → set source to `main` branch, root folder. Your plotter will be live at `https://<your-username>.github.io/<repo>/`.
+git remote add origin https://github.com/brightwindow/automatic-root-locus-generator.git
+...
+Your plotter will be live at `https://brightwindow.github.io/automatic-root-locus-generator/`.
 
 ## Tech
 
